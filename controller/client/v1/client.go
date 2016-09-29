@@ -775,6 +775,24 @@ func (c *Client) ScheduleAppGarbageCollection(appID string) error {
 	return c.Post(fmt.Sprintf("/apps/%s/gc", appID), nil, nil)
 }
 
+func (c *Client) CreateSink(sink *ct.Sink) error {
+	return c.Post("/sinks", sink, sink)
+}
+
+func (c *Client) GetSink(sinkID string) (*ct.Sink, error) {
+	sink := &ct.Sink{}
+	return sink, c.Get(fmt.Sprintf("/sinks/%s", sinkID), sink)
+}
+
+func (c *Client) DeleteSink(sinkID string) error {
+	return c.Delete(fmt.Sprintf("/sinks/%s", sinkID), nil)
+}
+
+func (c *Client) ListSinks() ([]*ct.Sink, error) {
+	var sinks []*ct.Sink
+	return sinks, c.Get("/sinks", &sinks)
+}
+
 func (c *Client) Put(path string, in, out interface{}) error {
 	return c.send("PUT", path, in, out)
 }

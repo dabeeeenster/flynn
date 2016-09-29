@@ -74,6 +74,10 @@ var preparedStatements = map[string]string{
 	"backup_insert":                         backupInsert,
 	"backup_update":                         backupUpdate,
 	"backup_select_latest":                  backupSelectLatest,
+	"sink_list":                             sinkList,
+	"sink_select":                           sinkSelect,
+	"sink_insert":                           sinkInsert,
+	"sink_delete":                           sinkDelete,
 }
 
 func PrepareStatements(conn *pgx.Conn) error {
@@ -401,4 +405,12 @@ INSERT INTO backups (status, sha512, size, error, completed_at) VALUES ($1, $2, 
 UPDATE backups SET status = $2, sha512 = $3, size = $4, error = $5, completed_at = $6, updated_at = now() WHERE backup_id = $1 RETURNING updated_at`
 	backupSelectLatest = `
 SELECT backup_id, status, sha512, size, error, created_at, updated_at, completed_at FROM backups WHERE deleted_at IS NULL ORDER BY updated_at DESC LIMIT 1`
+	sinkList = `
+SELECT sink_id, kind, config, created_at, updated_at FROM sinks WHERE deleted_at IS NULL ORDER BY updated_at DESC`
+	sinkSelect = `
+SELECT sink_id, kind, config, created_at, updated_at FROM sinks WHERE sink_id = $1`
+	sinkInsert = `
+INSERT INTO sinks (sink_id, kind, config) VALUES ($1, $2, $3) RETURNING created_at, updated_at`
+	sinkDelete = `
+UPDATE sinks SET deleted_at = now() WHERE sink_id = $1 AND deleted_at IS NULL`
 )

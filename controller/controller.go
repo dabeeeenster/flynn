@@ -215,6 +215,7 @@ func appHandler(c handlerConfig) http.Handler {
 	deploymentRepo := NewDeploymentRepo(c.db)
 	eventRepo := NewEventRepo(c.db)
 	backupRepo := NewBackupRepo(c.db)
+	sinkRepo := NewSinkRepo(c.db)
 
 	api := controllerAPI{
 		domainMigrationRepo: domainMigrationRepo,
@@ -228,6 +229,7 @@ func appHandler(c handlerConfig) http.Handler {
 		deploymentRepo:      deploymentRepo,
 		eventRepo:           eventRepo,
 		backupRepo:          backupRepo,
+		sinkRepo:            sinkRepo,
 		clusterClient:       c.cc,
 		logaggc:             c.lc,
 		routerc:             c.rc,
@@ -244,6 +246,7 @@ func appHandler(c handlerConfig) http.Handler {
 	crud(httpRouter, "releases", ct.Release{}, releaseRepo)
 	crud(httpRouter, "providers", ct.Provider{}, providerRepo)
 	crud(httpRouter, "artifacts", ct.Artifact{}, artifactRepo)
+	crud(httpRouter, "sinks", ct.Sink{}, sinkRepo)
 
 	httpRouter.Handler("GET", status.Path, status.Handler(func() status.Status {
 		if err := c.db.Exec("ping"); err != nil {
@@ -356,6 +359,7 @@ type controllerAPI struct {
 	deploymentRepo      *DeploymentRepo
 	eventRepo           *EventRepo
 	backupRepo          *BackupRepo
+	sinkRepo            *SinkRepo
 	clusterClient       utils.ClusterClient
 	logaggc             logClient
 	routerc             routerc.Client

@@ -409,6 +409,18 @@ $$ LANGUAGE plpgsql`,
 		`DROP TRIGGER notify_formation ON formations`,
 		`DROP FUNCTION notify_formation()`,
 	)
+	migrations.Add(23,
+		`CREATE TABLE sink_kinds (name text PRIMARY KEY)`,
+		`INSERT INTO sink_kinds (name) VALUES ('tcp')`,
+		`CREATE TABLE sinks (
+			sink_id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+			kind text NOT NULL REFERENCES sink_kinds,
+			config jsonb NOT NULL,
+			created_at timestamptz NOT NULL DEFAULT now(),
+			updated_at timestamptz NOT NULL DEFAULT now(),
+			deleted_at timestamptz
+		)`,
+	)
 }
 
 func migrateDB(db *postgres.DB) error {
