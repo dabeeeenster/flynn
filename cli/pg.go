@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 
 	"github.com/cheggaaa/pb"
 	"github.com/docker/docker/pkg/term"
@@ -16,11 +17,12 @@ func init() {
 	register("pg", runPg, `
 usage: flynn pg psql [--] [<argument>...]
        flynn pg dump [-q] [-f <file>]
-       flynn pg restore [-q] [-f <file>]
+       flynn pg restore [-q] [-j <jobs>] [-f <file>]
 
 Options:
-	-f, --file=<file>  name of dump file
-	-q, --quiet        don't print progress
+	-f, --file=<file>  name of dump file.
+	-q, --quiet        don't print progress.
+	-j, --jobs         number of pg_restore jobs to use. [default: 4]
 
 Commands:
 	psql     Open a console to a Flynn postgres database. Any valid arguments to psql may be provided.
@@ -35,7 +37,7 @@ Examples:
 
     $ flynn pg dump -f db.dump
 
-    $ flynn pg restore -f db.dump
+    $ flynn pg restore -j 8 -f db.dump
 `)
 }
 
@@ -131,6 +133,9 @@ func pgDump(client controller.Client, config *runConfig) error {
 }
 
 func runPgRestore(args *docopt.Args, client controller.Client, config *runConfig) error {
+	if _, err := strconv.Atoi(args.String["--jobs"]); err != nil {
+		return err
+	}
 	config.Stdin = os.Stdin
 	var size int64
 	if filename := args.String["--file"]; filename != "" {
@@ -160,11 +165,12 @@ func runPgRestore(args *docopt.Args, client controller.Client, config *runConfig
 		defer bar.Finish()
 		config.Stdin = bar.NewProxyReader(config.Stdin)
 	}
-	return pgRestore(client, config)
+
+	return pgRestore(client, config, args.String["--jobs"])
 }
 
-func pgRestore(client controller.Client, config *runConfig) error {
-	config.Args = []string{"pg_restore", "-d", config.Env["PGDATABASE"], "--clean", "--if-exists", "--no-owner", "--no-acl"}
+func pgRestore(client controller.Client, config *runConfig, jobs string) error {
+	config.Args = []string{"pg_restore", "-d", config.Env["PGDATABASE"], "--clean", "--if-exists", "--no-owner", "--no-acl", "--jobs", jobs}
 	err := runJob(client, *config)
 	if exit, ok := err.(RunExitError); ok && exit == 1 {
 		// pg_restore exits with zero if there are warnings

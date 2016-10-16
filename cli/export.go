@@ -56,6 +56,7 @@ Options:
 	-n, --name=<name>  name of app to create (defaults to exported app name)
 	-q, --quiet        don't print progress
 	-r, --routes       import routes
+	-j, --jobs         number of pg_restore jobs to use. [default: 4]
 `)
 }
 
@@ -284,6 +285,9 @@ func runExport(args *docopt.Args, client controller.Client) error {
 }
 
 func runImport(args *docopt.Args, client controller.Client) error {
+	if _, err := strconv.Atoi(args.String["--jobs"]); err != nil {
+		return err
+	}
 	var src io.Reader = os.Stdin
 	if filename := args.String["--file"]; filename != "" {
 		f, err := os.Open(filename)
@@ -473,7 +477,7 @@ func runImport(args *docopt.Args, client controller.Client) error {
 			config.Stdin = bar.NewProxyReader(config.Stdin)
 		}
 		config.Exit = false
-		if err := pgRestore(client, config); err != nil {
+		if err := pgRestore(client, config, args.String["--jobs"]); err != nil {
 			return fmt.Errorf("error restoring postgres database: %s", err)
 		}
 	}
